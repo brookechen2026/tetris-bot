@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Tetris</title>
+  <style>
+rect.s0 { fill: #000; }
+rect.s1 { fill: #ff0; }
+rect.s2 { fill: #0ff; }
+rect.s3 { fill: #a0a; }
+rect.s4 { fill: #f00; }
+rect.s5 { fill: #0c0; }
+rect.s6 { fill: #15f; }
+rect.s7 { fill: #f70; }
+/* no .s8, that'd be a ghost empty cell */
+rect.s9 { fill: #550; }
+rect.s10 { fill: #055; }
+rect.s11 { fill: #303; }
+rect.s12 { fill: #500; }
+rect.s13 { fill: #040; }
+rect.s14 { fill: #025; }
+rect.s15 { fill: #520; }
+  </style>
+  <script>
+
+const tets = [
+  [
+    [[0,0],[1,0],[0,-1],[1,-1]],   // 1,0 = O
+  ],
+  [
+    [[0,0],[0,-1],[0,-2],[0,-3]],  // 2,0 = tall I
+    [[-1,0],[0,0],[1,0],[2,0]],    // 2,1 = wide I
+  ], 
+  [
+    [[-1,-1],[0,-1],[1,-1],[0,0]], // 3,0 = top-up T
+    [[-1,-1],[0,-1],[0,-2],[0,0]], // 3,1 = top-right T
+    [[-1,0],[0,0],[1,0],[0,-1]],   // 3,2 = top-down T
+    [[0,0],[0,-1],[0,-2],[1,-1]],  // 3,3 = top-left T
+  ],
+  [
+    [[0,-2],[0,-1],[0,0],[1,0]],   // 4,0 = top-up L
+    [[0,0],[0,-1],[1,-1],[2,-1]],  // 4,1 = top-right L
+    [[-1,-2],[0,-2],[0,-1],[0,0]], // 4,2 = top-down L
+    [[-1,0],[0,0],[1,0],[1,-1]],   // 4,3 = top-left L
+  ],
+  [
+    [[-1,0],[0,0],[0,-1],[0,-2]],  // 5,0 = top-up J
+    [[0,-1],[0,0],[1,0],[2,0]],    // 5,1 = top-right J
+    [[0,0],[0,-1],[0,-2],[1,-2]],  // 5,2 = top-down J
+    [[-1,-1],[0,-1],[1,-1],[1,0]], // 5,3 = top-left J
+  ],
+  [
+    [[0,-2],[0,-1],[1,-1],[1,0]],  // 6,0 = tall S
+    [[-1,0],[0,0],[0,-1],[1,-1]],  // 6,1 = wide S
+  ],
+  [
+    [[1,-2],[1,-1],[0,-1],[0,0]],  // 7,0 = tall Z
+    [[-1,-1],[0,-1],[0,0],[1,0]],  // 7,1 = wide Z
+  ],
+];
+
+const board = [];
+for(let y=0; y<20; y+=1) {
+  board.push([]);
+  for(let x=0; x<10; x+=1)
+    board[y].push(0);
+}
+
+function update(data) {
+  const svg = document.querySelector('svg');
+  
+  if ('board' in data) {
+    for(let y = 0; y < 20; y+=1) {
+      let bits = data.board[y];
+      for(let x = 9; x >= 0; x -= 1) {
+        const num = (bits&7);
+        board[y][x] = num;
+        const cell = svg.getElementById('c'+x+'-'+y);
+        cell.setAttribute('class', 's'+num);
+        bits >>= 3;
+      }
+    }
+  }
+  
+  if ('live' in data) {
+    if (!Array.isArray(data.live) || data.live.length != 5) throw Error("live tetromino must be a list of 5 values.");
+    data.live.forEach(v => { if (!Number.isInteger(v)) throw Error("live tetromino must be a list of integers."); })
+    
+    const [shape, orient, x, y, candrop] = data.live;
+    if (shape <= 0 || shape > tets.length) throw Error("Invalid shape "+shape);
+    if (orient < 0 || orient > tets[shape-1].length) throw Error("Invalid orientation "+orient+" for shape "+shape);
+    
+    // find cells occupied
+    const cells = tets[shape-1][orient].map(([cx,cy]) => [x+cx, y+cy]);
+    const shadow = tets[shape-1][orient].map(([cx,cy]) => [x+cx, y+cy+candrop]);
+    
+    // verify no overlap
+    for(let p of cells) {
+      if (p[0] < 0 || p[0] > 9 || p[1] < 0 || p[1] > 19) throw Error("tetromino goes off the board"+JSON.stringify(p));
+      if (board[p[1]][p[0]] != 0) console.error("tetromino overlaps filled cell "+JSON.stringify(p));
+    }
+    for(let p of shadow) {
+      if (p[1] < 0 || p[1] > 19) throw Error("drop shadow goes off the board"+JSON.stringify(p));
+      if (board[p[1]][p[0]] != 0) console.error("drop shadow overlaps filled cell "+JSON.stringify(p));
+    }
+    
+    // change board colors
+    for(let y=0; y<20; y+=1) for (let x=0; x<10; x+=1) {
+      let color = board[y][x];
+      if (color == 0) for (let p of cells) if (p[0] == x && p[1] == y) color = shape;
+      if (color == 0) for (let p of shadow) if (p[0] == x && p[1] == y) color = shape|8;
+      svg.getElementById('c'+x+'-'+y).setAttribute('class','s'+color);
+    }
+  }
+  
+  if ('next' in data) {
+    svg.querySelectorAll('rect.next').forEach(e => e.remove())
+    for(let [x,y] of tets[data.next-1][0]) {
+      svg.insertAdjacentHTML('beforeend', `<rect x="${x+12}" y="${y+5}" width="1" height="1" class="next s${data.next}"/>`);
+    }
+  }
+  
+
+  if ('event' in data) {
+    // currently assumes always a "lost" event
+    sock.onclose = ()=>{}
+    window.sock.close()
+    delete window.sock
+  }
+
+}
+
+window.addEventListener('load', evt => {
+  const svg = document.querySelector('svg');
+  for(let row=0; row<20; row+=1) for(let col=0; col<10; col+=1) {
+    svg.insertAdjacentHTML('beforeend', `<rect x="${col}" y="${row}" id="c${col}-${row}" width="1" height="1" class="s0"/>`);
+  }
+})
+window.addEventListener('keydown', evt => {
+  if (!window.sock) return;
+  if (evt.key == 'ArrowLeft' || evt.key == 'A') sock.send('left');
+  if (evt.key == 'ArrowRight' || evt.key == 'D') sock.send('right');
+  if (evt.key == 'ArrowDown' || evt.key == 'S') sock.send('down');
+  if (evt.key == 'ArrowUp' || evt.key == 'x') sock.send('cw');
+  if (evt.key == 'z') sock.send('ccw');
+  if (evt.key == ' ') sock.send('drop');
+})
+
+
+function wsConnect() {
+    window.sock = new WebSocket('ws://'+location.host+'/ws');
+    sock.onclose = () => { alert("Server disconnected the WebSocket"); delete window.sock; }
+    sock.onmessage = msg => { console.debug(msg.data); update(JSON.parse(msg.data)); }
+}
+window.addEventListener('load', wsConnect);
+
+  </script>
+</head><body>
+
+<svg viewBox="0 0 15 20" style="height:calc(100vh - 2em); max-width:calc(100vw - 2em); background:#aaa;"></svg>
+
+</body></html>

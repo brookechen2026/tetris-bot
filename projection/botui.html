@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Bot to play Tetris</title>
+<script>
+
+
+function register() {
+  const url = document.getElementById('url').value
+  fetch("/server", {method:'POST', body:url}).then(res => {
+    if (res.status == 200) {
+      alert("Asked bot server to connect to "+url)
+    } else {
+      alert("Connection attempt returned status", res.status)
+    }
+  })
+}
+
+</script>
+</head>
+<body>
+  <form action="javascript:;" onsubmit="register()">
+    <div style="display:flex">
+      <label for="url">Game server WebSocket URL: </label>
+      <input type="text" id="url" style="flex:1" autofocus>
+      <input type="submit" value="Connect">
+    </div>
+  </form>
+  <input type="button" value="Stop all running bots" onclick="fetch('/stopall')">
+</body>
+</html>
