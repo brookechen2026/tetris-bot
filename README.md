@@ -2,6 +2,14 @@
 
 A CS340: Intro to Computer Systems final project at the University of Illinois Urbana-Champaign, Spring 2025, combining a browser-based Tetris game with a heuristic game-playing bot.
 
+## Overview
+
+<p align="center">
+  <img src="docs/images/tetris-bot-demo.gif" alt="Heuristic bot automatically rotating, moving, and placing Tetris pieces" width="360" />
+</p>
+
+*Actual bot gameplay captured through a local spectator adapter using the existing game and bot logic.*
+
 ## Features
 
 - Asynchronous game communication using aiohttp and WebSockets.
