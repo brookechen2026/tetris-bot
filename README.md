@@ -24,7 +24,3 @@ A CS340: Intro to Computer Systems final project at UIUC, Spring 2025, combining
 ## Approach
 
 The bot simulates candidate placements, scores the resulting boards, and selects a move sequence. Its evaluation rewards completed lines and penalizes holes, excessive height, and uneven stacking.
-
-## Project Background
-
-The project extends the course's MP10 Tetris assignment. Course-provided networking scaffolding and interfaces retain their original attribution. My work builds on that framework.
